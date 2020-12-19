@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader';
+import './Three.css';
     
 class Three extends Component {
     constructor(props) {
@@ -12,37 +13,16 @@ class Three extends Component {
         this.start = this.start.bind(this);
         this.stop = this.stop.bind(this);
         this.animate = this.animate.bind(this);
+       // this.load = this.load.bind(this);
     }
+
+    state = {
+        loading: false
+    };
 
     componentDidMount = () => {
         const width = this.mount.clientWidth;
         const height = this.mount.clientHeight;
-
-        // const scene = new THREE.Scene();
-        // const camera = new THREE.PerspectiveCamera(
-        //     75,
-        //     width / height,
-        //     0.1,
-        //     1000
-        // );
-        // const renderer = new THREE.WebGLRenderer({ antialias: true });
-        // const geometry = new THREE.BoxGeometry(1, 1, 1);
-        // const material = new THREE.MeshBasicMaterial({ color: '#433F81' });
-        // const cube = new THREE.Mesh(geometry, material);
-
-        // camera.position.z = 4;
-        // scene.add(cube);
-        // renderer.setClearColor('#000000');
-        // renderer.setSize(width, height);
-
-        // this.scene = scene;
-        // this.camera = camera;
-        // this.renderer = renderer;
-        // this.material = material;
-        // this.cube = cube;
-
-        // this.mount.appendChild(this.renderer.domElement);
-        // this.start();
         const renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setSize(width, height);
         const fov = 15; //시야각
@@ -61,6 +41,7 @@ class Three extends Component {
         let c, size;
         //let degree = 0;
         let pivot = new THREE.Object3D();
+        
         //-----------------
         camera.position.set(0, 0, -10);
         camera.rotation.set(0, 0, 0);
@@ -121,9 +102,9 @@ class Three extends Component {
             camera.lookAt(boxCenter.x, boxCenter.y, boxCenter.z);
         }
         
-        function load(){
+        //load = () => {
             const loader = new GLTFLoader();
-            loader.load('Earth_1_12756.gltf', function(gltf){
+            loader.load('Earth_1_12756.gltf', (gltf) => {
                 const cubeObj = gltf.scene.getObjectByName('Cube001');
                 const box = new THREE.Box3().setFromObject(cubeObj);
                 const boxSize = box.getSize(new THREE.Vector3()).length();
@@ -144,6 +125,9 @@ class Three extends Component {
                 scene.add(model);
                 model.rotateZ(22.5 * Math.PI / 360);
                 model.add(pivot);
+                this.setState({
+                    loading: true
+                });
                 loader.load('Moon_1_3474.glb', function(gltf){
                     moonModel = gltf.scene;
                     moonModel.scale.set(0.25, 0.25, 0.25);
@@ -151,11 +135,14 @@ class Three extends Component {
                     pivot.add(moonModel);
                     scene.add(pivot);
                     pivot.rotateZ(22.5 * Math.PI / 360);
+
+                }, (xhr) => {
+                    //console.log(Math.floor(xhr.loaded / 3276576 * 100) + '%loaded');
                 });
             });
-        }
+        //}
 
-        load();
+        //load();
 
         this.scene = scene;
         this.camera = camera;
@@ -216,9 +203,13 @@ class Three extends Component {
     }
 
     render() {
+        //const loading = this.state;
+        const message = this.pivot ? '':'ローディング中';
         return (
-            <div className="viewport" style={{width: "65%", height: '100vh' }}
-            ref={(mount) => { this.mount = mount }} />
+            <div className="viewport" style={{width: "65%", height: '100vh', zIndex: '1' }}
+            ref={(mount) => { this.mount = mount }} >
+                <label style={{position: "fixed", left: "30%", top: "50vh", zIndex: '2', color: 'white'}}>{message}</label>
+            </div>
         );
     }
 }
