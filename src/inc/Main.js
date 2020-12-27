@@ -1,7 +1,8 @@
 import React from 'react';
+import { Route, Link } from 'react-router-dom';
 
-const Text = (selObj) => {
-    console.log(selObj);
+const Main = (props) => {
+    console.log(props);
     return (
         <div style={{position: 'fixed', left: '75%', top: '45vh'}}>
             おはようございます！ <br/>
@@ -11,4 +12,4 @@ const Text = (selObj) => {
     );
 }
 
-export default Text;
+export default Main;

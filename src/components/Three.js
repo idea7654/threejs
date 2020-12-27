@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 //import {Canvas} from 'react-three-fiber';
 import * as THREE from 'three';
+import { Interaction } from 'three.interaction';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader';
 import './Three.css';
@@ -32,8 +33,9 @@ class Three extends Component {
         const far = 150; //카메라 앞에 렌더링되는 공간 범위를 지정(먼 곳)
         const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
         //---------
-        //-- key ---
-
+        //-- click ---
+        //let selectedObject
+        
         //----------
         //-- data inputs --
         let model = new THREE.Object3D();
@@ -55,6 +57,8 @@ class Three extends Component {
         
         const scene = new THREE.Scene();
         scene.background = new THREE.Color("#000000"); //배경색 지정
+
+        const interaction = new Interaction(renderer, scene, camera);
         
         const color = 0xFFFFFF;
         const intensity = 2;
@@ -104,6 +108,7 @@ class Three extends Component {
         
         //load = () => {
             const loader = new GLTFLoader();
+            const {onSelect} = this.props;
             loader.load('Earth_1_12756.gltf', (gltf) => {
                 const cubeObj = gltf.scene.getObjectByName('Cube001');
                 const box = new THREE.Box3().setFromObject(cubeObj);
@@ -128,6 +133,10 @@ class Three extends Component {
                 this.setState({
                     loading: true
                 });
+                model.name = 'earth';
+                model.on('click', (ev) => {
+                    onSelect(ev.target.name);
+                });
                 loader.load('Moon_1_3474.glb', function(gltf){
                     moonModel = gltf.scene;
                     moonModel.scale.set(0.25, 0.25, 0.25);
@@ -135,7 +144,10 @@ class Three extends Component {
                     pivot.add(moonModel);
                     scene.add(pivot);
                     pivot.rotateZ(22.5 * Math.PI / 360);
-
+                    pivot.name = 'moon';
+                    pivot.on('click', (ev) => {
+                        onSelect(ev.target.name);
+                    });
                 }, (xhr) => {
                     //console.log(Math.floor(xhr.loaded / 3276576 * 100) + '%loaded');
                 });
@@ -160,6 +172,10 @@ class Three extends Component {
         //this.stop();
         this.mount.removeChild(this.renderer.domElement);
     }
+
+    handleClick = (e) => {
+        e.preventDefault();
+    };
     
     start() {
         if (!this.frameId) {
