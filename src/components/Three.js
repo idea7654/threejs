@@ -35,11 +35,14 @@ class Three extends Component {
         //---------
         //-- click ---
         //let selectedObject
-        
+        let count = 0;
+        let flag = true;
+        let rotateFlag = true;
+        let ev = null;
         //----------
         //-- data inputs --
         let model = new THREE.Object3D();
-        let moonModel;
+        let moonModel = new THREE.Object3D();
         let c, size;
         //let degree = 0;
         let pivot = new THREE.Object3D();
@@ -53,6 +56,7 @@ class Three extends Component {
         //controls.target.set(13.5, 9, -6.3);
         //controls.target.set(0, 0, 1);
         controls.rotateSpeed = 0.3;
+        controls.zoomSpeed = 0.5;
         controls.update();
         
         const scene = new THREE.Scene();
@@ -85,8 +89,8 @@ class Three extends Component {
             scene.add(light5);
         }
         
-        function frameArea(sizeToFitOnScreen, boxSize, boxCenter, camera) {
-            const halfSizeToFitOnScreen = sizeToFitOnScreen * 0.5;
+        this.frameArea = function(sizeToFitOnScreen, boxSize, boxCenter, camera) {
+            const halfSizeToFitOnScreen = sizeToFitOnScreen * 0.7;
             const halfFovY = THREE.MathUtils.degToRad(camera.fov * .5);
             const distance = halfSizeToFitOnScreen / Math.tan(halfFovY);
  
@@ -107,62 +111,62 @@ class Three extends Component {
         }
         
         //load = () => {
-            const loader = new GLTFLoader();
-            const {onSelect} = this.props;
-            loader.load('Earth_1_12756.gltf', (gltf) => {
-                const cubeObj = gltf.scene.getObjectByName('Cube001');
-                const box = new THREE.Box3().setFromObject(cubeObj);
-                const boxSize = box.getSize(new THREE.Vector3()).length();
-                const boxCenter = box.getCenter(new THREE.Vector3());
-                //console.log(dumpObject(gltf.scene).join('\n'));
+        const loader = new GLTFLoader();
+        const {onSelect} = this.props;
+        loader.load('Earth_1_12756.gltf', (gltf) => {
+            const cubeObj = gltf.scene.getObjectByName('Cube001');
+            const box = new THREE.Box3().setFromObject(cubeObj);
+            const boxSize = box.getSize(new THREE.Vector3()).length();
+            const boxCenter = box.getCenter(new THREE.Vector3());
+            //console.log(dumpObject(gltf.scene).join('\n'));
+            
+            c = box.getCenter(new THREE.Vector3());
+            size = box.getSize(new THREE.Vector3());
+            
+            this.frameArea(boxSize * 1.2, boxSize, boxCenter, camera);
                 
-                c = box.getCenter(new THREE.Vector3());
-                size = box.getSize(new THREE.Vector3());
+            controls.maxDistance = boxSize * 30;
+            controls.target.copy(boxCenter);
+            controls.update();
+            cubeObj.scale.set(1, 1, 1);
                 
-                frameArea(boxSize * 1.2, boxSize, boxCenter, camera);
-                
-                controls.maxDistance = boxSize * 20;
-                controls.target.copy(boxCenter);
-                controls.update();
-                cubeObj.scale.set(1, 1, 1);
-                
-                model.add(cubeObj);
-                scene.add(model);
-                model.rotateZ(22.5 * Math.PI / 360);
-                model.add(pivot);
-                this.setState({
-                    loading: true
-                });
-                model.name = 'earth';
-                model.on('click', (ev) => {
-                    onSelect(ev.target.name);
-                });
-                loader.load('Moon_1_3474.glb', function(gltf){
-                    moonModel = gltf.scene;
-                    moonModel.scale.set(0.25, 0.25, 0.25);
-                    moonModel.position.x = -1000;
-                    pivot.add(moonModel);
-                    scene.add(pivot);
-                    pivot.rotateZ(22.5 * Math.PI / 360);
-                    pivot.name = 'moon';
-                    pivot.on('click', (ev) => {
-                        onSelect(ev.target.name);
-                    });
-                }, (xhr) => {
-                    //console.log(Math.floor(xhr.loaded / 3276576 * 100) + '%loaded');
-                });
+            model.add(cubeObj);
+            scene.add(model);
+            model.rotateZ(22.5 * Math.PI / 360);
+            model.add(pivot);
+            this.setState({
+                loading: true
             });
-        //}
+            model.name = 'earth';
+            model.on('click', (ev) => {
+                onSelect(ev.target.name);
+            });
+            
+        });
 
-        //load();
+        loader.load('Moon_1_3474.glb', function(glb){
+            moonModel = glb.scene;
+            moonModel.scale.set(0.25, 0.25, 0.25);
+            moonModel.position.x = -1000;
+            pivot.add(moonModel);
+            scene.add(pivot);
+            //pivot.rotateZ(22.5 * Math.PI / 360);
+            pivot.name = 'moon';
+            pivot.on('click', (ev) => {
+                onSelect(ev.target.name);
+                ev = ev.data.global;
+            });
+        });
 
         this.scene = scene;
         this.camera = camera;
         this.renderer = renderer;
         this.pivot = pivot;
         this.model = model;
-        this.moonModel = moonModel;
         this.controls = controls;
+        this.count = count;
+        this.flag = flag;
+        this.rotateFlag = rotateFlag;
 
         this.mount.appendChild(this.renderer.domElement);
         this.start();
@@ -172,10 +176,6 @@ class Three extends Component {
         //this.stop();
         this.mount.removeChild(this.renderer.domElement);
     }
-
-    handleClick = (e) => {
-        e.preventDefault();
-    };
     
     start() {
         if (!this.frameId) {
@@ -186,6 +186,33 @@ class Three extends Component {
     stop() {
         cancelAnimationFrame(this.frameId);
     }
+
+    update = () => {
+        const {selObj} = this.props;
+        
+        if(selObj.selectedObject === 'earth'){
+            if(this.count < 10 && this.flag === true){
+                this.controls.zoomOut();
+                //this.update();
+                this.count = this.count + 1;
+            }else{
+                this.count = 0;
+                this.flag = false;
+            }
+        }
+        if(selObj.selectedObject === 'moon'){
+            this.flag = true;
+            this.rotateFlag = false;
+            //여기에 카메라 이동 구현
+        }
+
+        if(this.rotateFlag === true){
+            this.pivot.rotateY(0.01);
+            this.model.rotateY(Math.PI / 360 * 0.1);
+        }else{
+            //console.log(this.ev);
+        }
+    };
     
     animate() {
         // this.cube.rotation.x += 0.01;
@@ -207,8 +234,8 @@ class Three extends Component {
             this.camera.updateProjectionMatrix();
         }
 
-        this.pivot.rotateY(0.01);
-        this.model.rotateY(Math.PI / 360 * 0.1);
+        this.update();
+        
     
         this.renderScene();
         this.frameId = window.requestAnimationFrame(this.animate);

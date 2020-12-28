@@ -2,7 +2,6 @@ import React from 'react';
 import { Route, Link } from 'react-router-dom';
 
 const Main = (props) => {
-    console.log(props);
     return (
         <div style={{position: 'fixed', left: '75%', top: '45vh'}}>
             おはようございます！ <br/>
